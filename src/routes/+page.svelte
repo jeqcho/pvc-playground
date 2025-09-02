@@ -1,5 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import {
+		computePVC as computePVCLogic,
+		computeVetoCoalition as computeVetoCoalitionLogic,
+		validateVoterPreferences,
+		matrixToProfile,
+		generateAlternatives,
+		type VetoCoalitionResult
+	} from '$lib/pvc';
 
 	let m = 3; // number of alternatives
 	let n = 3; // number of voters
@@ -23,7 +31,7 @@
 
 	// Generate alternatives a-z based on m
 	function getAlternatives(): string[] {
-		return Array.from({ length: m }, (_, i) => String.fromCharCode(97 + i));
+		return generateAlternatives(m);
 	}
 
 	// Set identical preferences (a, b, c, ... for all voters)
@@ -56,48 +64,30 @@
 	function isColumnValid(colIndex: number): boolean {
 		const column = preferences.map(row => row[colIndex]);
 		const alternatives = getAlternatives();
-		
-		// Check for duplicates
-		const unique = new Set(column);
-		if (unique.size !== column.length) return false;
-		
-		// Check for empty entries
-		if (column.some(cell => !cell)) return false;
-		
-		// Check if all entries are valid alternatives
-		return column.every(cell => alternatives.includes(cell));
+		return validateVoterPreferences(column, alternatives);
 	}
 
-	// Dummy PVC computation - returns first 2 alternatives
+	// PVC computation
 	function computePVC() {
 		const alternatives = getAlternatives();
-		if (alternatives.length < 2) {
-			pvc = alternatives;
-		} else {
-			pvc = alternatives.slice(0, 2);
-		}
+		pvc = computePVCLogic(preferences, alternatives);
 	}
 
-	// Dummy veto coalition computation - returns voters 0 and 2 (or just 0 if n < 3)
+	// Veto coalition computation
 	function computeVetoCoalition(alternative: string) {
-		selectedAlternative = alternative;
-		if (n < 3) {
-			vetoCoalition = [0];
-		} else {
-			vetoCoalition = [0, 2];
-		}
-		
-		// Compute preferred alternatives (dummy logic)
 		const alternatives = getAlternatives();
-		const altIndex = alternatives.indexOf(alternative);
-		preferredAlternatives = alternatives.slice(0, altIndex);
+		const result = computeVetoCoalitionLogic(alternative, preferences, alternatives, pvc);
 		
-		// Update dashboard values (dummy values for now)
-		T = vetoCoalition.length;
-		T_size = T;
-		v_T = Math.floor(Math.random() * 10);
-		B = preferredAlternatives;
-		lambda_B_over_P = Math.random();
+		selectedAlternative = result.selectedAlternative;
+		vetoCoalition = result.coalition;
+		preferredAlternatives = result.preferredAlternatives;
+		
+		// Update dashboard values
+		T = result.dashboardValues.T;
+		T_size = result.dashboardValues.T_size;
+		v_T = result.dashboardValues.v_T;
+		B = result.dashboardValues.B;
+		lambda_B_over_P = result.dashboardValues.lambda_B_over_P;
 	}
 
 	// Handle alternative click
