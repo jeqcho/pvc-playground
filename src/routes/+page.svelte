@@ -156,7 +156,9 @@
 		<div class="two-columns">
 			<!-- Left: Voter Preference Matrix -->
 			<div class="column">
-				<h3>Voter Preference</h3>
+				<div class="column-header">
+					<h3>Voter Preference</h3>
+				</div>
 				<div class="matrix">
 					{#each preferences as row, rowIndex}
 						<div class="matrix-row">
@@ -181,14 +183,8 @@
 
 			<!-- Right: PVC Display -->
 			<div class="column">
-				<h3>PVC</h3>
-				<div class="legend">
-					<span class="legend-item">
-						<span class="color-box green"></span> In PVC
-					</span>
-					<span class="legend-item">
-						<span class="color-box red"></span> Not in PVC
-					</span>
+				<div class="column-header">
+					<h3>PVC</h3>
 				</div>
 				<div class="pvc-list">
 					{#each getAlternatives() as alternative}
@@ -205,13 +201,21 @@
 						</div>
 					{/each}
 				</div>
+				<p class="instruction">Click on any alternative that is not in the PVC to see a veto coalition</p>
+				<div class="legend">
+					<span class="legend-item">
+						<span class="color-box green"></span> In PVC
+					</span>
+					<span class="legend-item">
+						<span class="color-box yellow"></span> Not in PVC
+					</span>
+				</div>
 			</div>
 		</div>
 	</section>
 
 	<!-- Section 3: Veto Coalition Dashboard -->
 	<section class="section">
-		<h3>Click on any alternative that is not in the PVC to see a veto coalition</h3>
 		
 		<div class="dashboard">
 			<div class="dashboard-item">
@@ -299,6 +303,13 @@
 		gap: 2rem;
 	}
 
+	.column-header {
+		min-height: 60px;
+		display: flex;
+		flex-direction: column;
+		justify-content: flex-start;
+	}
+
 	.matrix {
 		display: flex;
 		flex-direction: column;
@@ -331,15 +342,13 @@
 	}
 
 	.matrix-cell.selected-alternative {
-		background-color: #dc3545;
-		color: white;
-		font-weight: bold;
+		background-color: #ffc107;
 	}
 
 	.matrix-cell.preferred-alternative {
-		background-color: #007bff;
-		color: white;
+		border: 3px solid #007bff;
 		border-radius: 50%;
+		background-color: transparent;
 	}
 
 	.compute-btn {
@@ -368,6 +377,12 @@
 		gap: 0.5rem;
 	}
 
+	.instruction {
+		font-size: 0.9rem;
+		color: #666;
+		margin: 0.5rem 0;
+	}
+
 	.color-box {
 		width: 20px;
 		height: 20px;
@@ -378,24 +393,30 @@
 		background: #28a745;
 	}
 
-	.color-box.red {
-		background: #dc3545;
+	.color-box.yellow {
+		background: #ffc107;
 	}
 
 	.pvc-list {
 		display: flex;
 		flex-direction: column;
-		gap: 4px;
+		gap: 2px;
+		margin-top: 2px;
 	}
 
 	.pvc-item {
-		padding: 0.75rem;
+		width: 40px;
+		height: 40px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		text-align: center;
 		font-size: 1.2rem;
 		font-weight: bold;
 		border-radius: 4px;
 		cursor: pointer;
 		transition: all 0.2s;
+		border: 1px solid #ccc;
 	}
 
 	.pvc-item.in-pvc {
@@ -404,12 +425,12 @@
 	}
 
 	.pvc-item.not-in-pvc {
-		background: #dc3545;
-		color: white;
+		background: #ffc107;
+		color: black;
 	}
 
 	.pvc-item.not-in-pvc:hover {
-		background: #c82333;
+		background: #e0a800;
 	}
 
 	.pvc-item.highlighted {
