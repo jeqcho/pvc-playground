@@ -16,7 +16,7 @@
 	let selectedAlternative = '';
 	let vetoCoalition: number[] = [];
 	let preferredAlternatives: string[] = [];
-	
+
 	// Dashboard values
 	let T = 0;
 	let T_size = 0;
@@ -26,7 +26,9 @@
 
 	// Initialize preferences matrix
 	function initializeMatrix() {
-		preferences = Array(m).fill(null).map(() => Array(n).fill(''));
+		preferences = Array(m)
+			.fill(null)
+			.map(() => Array(n).fill(''));
 	}
 
 	// Generate alternatives a-z based on m
@@ -50,7 +52,7 @@
 	function randomizePreferences() {
 		const alternatives = getAlternatives();
 		preferences = alternatives.map(() => Array(n).fill(''));
-		
+
 		for (let col = 0; col < n; col++) {
 			const shuffled = [...alternatives].sort(() => Math.random() - 0.5);
 			for (let row = 0; row < m; row++) {
@@ -62,7 +64,7 @@
 
 	// Validate a column (voter's preferences)
 	function isColumnValid(colIndex: number): boolean {
-		const column = preferences.map(row => row[colIndex]);
+		const column = preferences.map((row) => row[colIndex]);
 		const alternatives = getAlternatives();
 		return validateVoterPreferences(column, alternatives);
 	}
@@ -73,15 +75,15 @@
 		pvc = computePVCLogic(preferences, alternatives);
 	}
 
-	// Veto coalition computation
-	function computeVetoCoalition(alternative: string) {
+	// Handle alternative click
+	function onAlternativeClick(alternative: string) {
 		const alternatives = getAlternatives();
 		const result = computeVetoCoalitionLogic(alternative, preferences, alternatives, pvc);
-		
+
 		selectedAlternative = result.selectedAlternative;
 		vetoCoalition = result.coalition;
 		preferredAlternatives = result.preferredAlternatives;
-		
+
 		// Update dashboard values
 		T = result.dashboardValues.T;
 		T_size = result.dashboardValues.T_size;
@@ -90,11 +92,16 @@
 		lambda_B_over_P = result.dashboardValues.lambda_B_over_P;
 	}
 
-	// Handle alternative click
-	function onAlternativeClick(alternative: string) {
-		if (!pvc.includes(alternative)) {
-			computeVetoCoalition(alternative);
-		}
+	// Clear veto coalition display
+	function clearVetoCoalition() {
+		selectedAlternative = '';
+		vetoCoalition = [];
+		preferredAlternatives = [];
+		T = 0;
+		T_size = 0;
+		v_T = 0;
+		B = [];
+		lambda_B_over_P = 0;
 	}
 
 	// Handle input changes
@@ -119,21 +126,21 @@
 
 <main class="container">
 	<h1>Proportional Veto Core Playground</h1>
-	
+
 	<!-- Section 1: Input Parameters -->
 	<section class="section">
 		<h2>Parameters</h2>
 		<div class="inputs">
 			<label>
-				m (alternatives): 
+				m (alternatives):
 				<input type="number" bind:value={m} min="1" max="26" on:change={onMNChange} />
 			</label>
 			<label>
-				n (voters): 
+				n (voters):
 				<input type="number" bind:value={n} min="1" on:change={onMNChange} />
 			</label>
 		</div>
-		
+
 		<div class="subsection">
 			<h3>Initialize Matrix</h3>
 			<button on:click={setIdenticalPreferences}>Identical Preferences</button>
@@ -153,16 +160,19 @@
 					{#each preferences as row, rowIndex}
 						<div class="matrix-row">
 							{#each row as cell, colIndex}
-								<input 
-									type="text" 
+								<input
+									type="text"
 									maxlength="1"
 									bind:value={cell}
 									on:input={(e) => onPreferenceChange(rowIndex, colIndex, e.target.value)}
 									class="matrix-cell"
 									class:invalid={!isColumnValid(colIndex)}
 									class:veto-column={vetoCoalition.includes(colIndex)}
-									class:selected-alternative={vetoCoalition.includes(colIndex) && cell === selectedAlternative}
-									class:preferred-alternative={vetoCoalition.includes(colIndex) && preferredAlternatives.includes(cell) && cell !== selectedAlternative}
+									class:selected-alternative={vetoCoalition.includes(colIndex) &&
+										cell === selectedAlternative}
+									class:preferred-alternative={vetoCoalition.includes(colIndex) &&
+										preferredAlternatives.includes(cell) &&
+										cell !== selectedAlternative}
 								/>
 							{/each}
 						</div>
@@ -178,7 +188,7 @@
 				</div>
 				<div class="pvc-list">
 					{#each getAlternatives() as alternative}
-						<div 
+						<div
 							class="pvc-item"
 							class:in-pvc={pvc.includes(alternative)}
 							class:not-in-pvc={!pvc.includes(alternative)}
@@ -191,7 +201,7 @@
 						</div>
 					{/each}
 				</div>
-				<p class="instruction">Click on any alternative that is not in the PVC to see a veto coalition</p>
+				<p class="instruction">Click on any alternative to see a veto coalition</p>
 				<div class="legend">
 					<span class="legend-item">
 						<span class="color-box green"></span> In PVC
@@ -206,30 +216,70 @@
 
 	<!-- Section 3: Veto Coalition Dashboard -->
 	<section class="section">
-		
-		<div class="dashboard">
-			<div class="dashboard-item">
-				<strong>T:</strong> {T}
-			</div>
-			<div class="dashboard-item">
-				<strong>|T|:</strong> {T_size}
-			</div>
-			<div class="dashboard-item">
-				<strong>v(T):</strong> {v_T}
-			</div>
-			<div class="dashboard-item">
-				<strong>B:</strong> [{B.join(', ')}]
-			</div>
-			<div class="dashboard-item">
-				<strong>λ(B)/λ(P):</strong> {lambda_B_over_P.toFixed(3)}
-			</div>
-		</div>
+		{#if selectedAlternative}
+			<div class="veto-dashboard">
+				{#if preferredAlternatives.length > 0}
+					<div class="analysis-section found">
+						<h4>Veto Coalition Found</h4>
+						<div class="coalition-info">
+							<p>
+								<strong>Coalition Members (T):</strong> Voters {vetoCoalition
+									.map((i) => i + 1)
+									.join(', ')}
+							</p>
+							<p><strong>Preferred Alternatives (B):</strong> [{preferredAlternatives.join(', ')}]</p>
+							<p><strong>Proportion of preferred alternatives (|B|/m):</strong> {Math.round(lambda_B_over_P * 1000) / 1000}</p>
+						</div>
+					</div>
 
-		{#if vetoCoalition.length > 0}
-			<div class="veto-info">
-				<p><strong>Veto Coalition:</strong> Voters {vetoCoalition.map(i => i + 1).join(', ')}</p>
-				<p><strong>Selected Alternative:</strong> {selectedAlternative}</p>
-				<p><strong>Preferred Alternatives:</strong> [{preferredAlternatives.join(', ')}]</p>
+					<div class="metrics-section">
+						<div class="metrics-grid">
+							<div class="metric-item">
+								<div class="metric-symbol">|T|/n</div>
+								<div class="metric-details">
+									<div class="metric-label">Voting Power</div>
+									<div class="metric-value">{Math.round(v_T * 1000) / 1000}</div>
+								</div>
+							</div>
+
+							<div class="metric-item">
+								<div class="metric-symbol">1-|B|/m</div>
+								<div class="metric-details">
+									<div class="metric-label">Size of Veto</div>
+									<div class="metric-value">{Math.round((1 - lambda_B_over_P) * 1000) / 1000}</div>
+								</div>
+							</div>
+						</div>
+						
+					</div>
+					<p class="veto-explanation">An alternative is vetoed if the voting power of the coalition can afford the size of the veto: <strong>|T|/n ≥ 1 - |B|/m</strong></p>
+						
+						<div class="condition-result">
+							<div class="condition-check {v_T >= (1 - lambda_B_over_P) ? 'satisfied' : 'not-satisfied'}">
+								<span class="condition-text">
+									{Math.round(v_T * 1000) / 1000} 
+									{v_T >= (1 - lambda_B_over_P) ? '≥' : '<'} 
+									{Math.round((1 - lambda_B_over_P) * 1000) / 1000}
+								</span>
+								<span class="condition-status">
+									{v_T >= (1 - lambda_B_over_P) ? '✓ Condition Satisfied' : '✗ Condition Not Satisfied'}
+								</span>
+							</div>
+						</div>
+
+					<button on:click={clearVetoCoalition} class="clear-btn">Clear Analysis</button>
+				{:else}
+					<div class="analysis-section not-found">
+						<h4>No Veto Coalition Found</h4>
+						<p>No coalition of voters can veto alternative <strong>{selectedAlternative}</strong></p>
+						<p class="no-veto-explanation">This alternative cannot be eliminated through the proportional veto mechanism with the current preference profile.</p>
+					</div>
+					<button on:click={clearVetoCoalition} class="clear-btn">Clear Analysis</button>
+				{/if}
+			</div>
+		{:else}
+			<div class="instruction-section">
+				<p>Click on any alternative above on the right to analyze its veto coalition</p>
 			</div>
 		{/if}
 	</section>
@@ -409,6 +459,15 @@
 		border: 1px solid #ccc;
 	}
 
+	.pvc-item {
+		background: #6c757d;
+		color: white;
+	}
+
+	.pvc-item:hover {
+		background: #5a6268;
+	}
+
 	.pvc-item.in-pvc {
 		background: #28a745;
 		color: white;
@@ -427,32 +486,157 @@
 		outline: 3px solid #007bff;
 	}
 
-	.dashboard {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 1rem;
-		margin-bottom: 1rem;
+	.veto-dashboard {
 		padding: 1rem;
-		background: #f8f9fa;
-		border-radius: 4px;
 	}
 
-	.dashboard-item {
-		padding: 0.5rem;
-		background: white;
-		border: 1px solid #ddd;
-		border-radius: 4px;
-		min-width: 120px;
+	.instruction-section {
+		padding: 2rem;
+		text-align: center;
+		color: #666;
+		font-style: italic;
 	}
 
-	.veto-info {
+	.analysis-section {
+		margin-bottom: 2rem;
 		padding: 1rem;
 		background: #e9ecef;
 		border-radius: 4px;
-		margin-top: 1rem;
 	}
 
-	.veto-info p {
+	.analysis-section h4 {
+		margin: 0 0 1rem 0;
+	}
+
+	.analysis-section.found h4 {
+		color: #28a745;
+	}
+
+	.analysis-section.not-found h4 {
+		color: #dc3545;
+	}
+
+	.coalition-info p {
 		margin: 0.5rem 0;
+	}
+
+	.no-veto-explanation {
+		color: #666;
+		font-style: italic;
+		margin-top: 0.75rem;
+		font-size: 0.9rem;
+	}
+
+	.metrics-section {
+		margin-bottom: 2rem;
+	}
+
+	.metrics-section h4 {
+		margin: 0 0 1rem 0;
+	}
+
+	.veto-explanation {
+		background: #f8f9fa;
+		padding: 1rem;
+		border-left: 4px solid #007bff;
+		border-radius: 4px;
+		margin-bottom: 1.5rem;
+		font-size: 0.95rem;
+		line-height: 1.4;
+	}
+
+	.condition-result {
+		margin-bottom: 1.5rem;
+	}
+
+	.condition-check {
+		padding: 1rem;
+		border-radius: 6px;
+		text-align: center;
+		font-weight: bold;
+	}
+
+	.condition-check.satisfied {
+		background: #d4edda;
+		border: 2px solid #28a745;
+		color: #155724;
+	}
+
+	.condition-check.not-satisfied {
+		background: #f8d7da;
+		border: 2px solid #dc3545;
+		color: #721c24;
+	}
+
+	.condition-text {
+		display: block;
+		font-size: 1.2rem;
+		margin-bottom: 0.5rem;
+		font-family: monospace;
+	}
+
+	.condition-status {
+		display: block;
+		font-size: 0.9rem;
+		font-weight: normal;
+	}
+
+	.metrics-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		gap: 1rem;
+	}
+
+	.metric-item {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		padding: 1rem;
+		background: #f8f9fa;
+		border: 1px solid #ddd;
+		border-radius: 4px;
+	}
+
+	.metric-symbol {
+		font-size: 1.5rem;
+		font-weight: bold;
+		color: #007bff;
+		min-width: 60px;
+		text-align: center;
+		background: white;
+		padding: 0.5rem;
+		border-radius: 4px;
+		border: 2px solid #007bff;
+	}
+
+	.metric-details {
+		flex: 1;
+	}
+
+	.metric-label {
+		font-size: 0.9rem;
+		color: #666;
+		margin-bottom: 0.25rem;
+	}
+
+	.metric-value {
+		font-size: 1.1rem;
+		font-weight: bold;
+		color: #333;
+	}
+
+	.clear-btn {
+		margin-top: 1rem;
+		padding: 0.5rem 1rem;
+		background: #dc3545;
+		color: white;
+		border: none;
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 0.9rem;
+	}
+
+	.clear-btn:hover {
+		background: #c82333;
 	}
 </style>
