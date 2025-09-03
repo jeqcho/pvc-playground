@@ -167,12 +167,6 @@
 									on:input={(e) => onPreferenceChange(rowIndex, colIndex, e.target.value)}
 									class="matrix-cell"
 									class:invalid={!isColumnValid(colIndex)}
-									class:veto-column={vetoCoalition.includes(colIndex)}
-									class:selected-alternative={vetoCoalition.includes(colIndex) &&
-										cell === selectedAlternative}
-									class:preferred-alternative={vetoCoalition.includes(colIndex) &&
-										preferredAlternatives.includes(cell) &&
-										cell !== selectedAlternative}
 								/>
 							{/each}
 						</div>
@@ -229,6 +223,49 @@
 							</p>
 							<p><strong>Preferred Alternatives (B):</strong> [{preferredAlternatives.join(', ')}]</p>
 							<p><strong>Proportion of preferred alternatives (|B|/m):</strong> {Math.round(lambda_B_over_P * 1000) / 1000}</p>
+						</div>
+					</div>
+
+					<div class="veto-matrix-section">
+						<h4>Veto Coalition Preference Matrix</h4>
+						<div class="veto-matrix-legend">
+							<span class="legend-item">
+								<span class="coalition-arrow-legend">↑</span> Coalition Members
+							</span>
+							<span class="legend-item">
+								<span class="color-box selected-alt-legend"></span> Vetoed Alternative
+							</span>
+							<span class="legend-item">
+								<span class="color-box preferred-alt-legend"></span> Preferred Alternatives
+							</span>
+						</div>
+						<div class="veto-matrix-container">
+							<div class="veto-matrix">
+								{#each preferences as row, rowIndex}
+									<div class="veto-matrix-row">
+										{#each row as cell, colIndex}
+											<div 
+												class="veto-matrix-cell"
+												class:veto-column={vetoCoalition.includes(colIndex)}
+												class:selected-alternative={vetoCoalition.includes(colIndex) && cell === selectedAlternative}
+												class:preferred-alternative={vetoCoalition.includes(colIndex) && preferredAlternatives.includes(cell) && cell !== selectedAlternative}
+											>
+												{cell}
+											</div>
+										{/each}
+									</div>
+								{/each}
+							</div>
+							<div class="coalition-arrows">
+								{#each Array(n) as _, colIndex}
+									{#if vetoCoalition.includes(colIndex)}
+										<div class="coalition-arrow" style="left: {colIndex * 42 + 21}px;">
+											<div class="arrow-pointer">↑</div>
+											<div class="arrow-label">Voter {colIndex + 1}</div>
+										</div>
+									{/if}
+								{/each}
+							</div>
 						</div>
 					</div>
 
@@ -374,21 +411,6 @@
 	.matrix-cell.invalid {
 		border-color: red;
 		background-color: #ffe6e6;
-	}
-
-	.matrix-cell.veto-column {
-		border: 2px solid #007bff;
-		background-color: #e3f2fd;
-	}
-
-	.matrix-cell.selected-alternative {
-		background-color: #ffc107;
-	}
-
-	.matrix-cell.preferred-alternative {
-		border: 3px solid #007bff;
-		border-radius: 50%;
-		background-color: transparent;
 	}
 
 	.compute-btn {
@@ -638,5 +660,134 @@
 
 	.clear-btn:hover {
 		background: #c82333;
+	}
+
+	.veto-matrix-section {
+		margin-bottom: 3rem;
+		padding: 1rem;
+		padding-bottom: 2rem;
+		background: #f8f9fa;
+		border-radius: 8px;
+		border: 1px solid #dee2e6;
+	}
+
+	.veto-matrix-section h4 {
+		margin: 0 0 1rem 0;
+		color: #495057;
+	}
+
+	.veto-matrix-legend {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1rem;
+		margin-bottom: 1rem;
+		padding: 0.75rem;
+		background: white;
+		border-radius: 4px;
+		border: 1px solid #dee2e6;
+	}
+
+
+	.coalition-arrow-legend {
+		color: #007bff;
+		font-size: 1.2rem;
+		font-weight: bold;
+		margin-right: 0.25rem;
+	}
+
+	.selected-alt-legend {
+		background: #ffc107;
+	}
+
+	.preferred-alt-legend {
+		background: #cce7ff;
+		color: #004085;
+		border: 1px solid #004085;
+	}
+
+	.veto-matrix-container {
+		position: relative;
+		background: white;
+		border-radius: 4px;
+		border: 1px solid #dee2e6;
+		margin-bottom: 1rem;
+	}
+
+	.veto-matrix {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		padding: 1rem;
+		padding-bottom: 4rem;
+	}
+
+	.veto-matrix-row {
+		display: flex;
+		gap: 2px;
+	}
+
+	.veto-matrix-cell {
+		width: 40px;
+		height: 40px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+		border: 1px solid #ccc;
+		font-size: 1.2rem;
+		text-transform: lowercase;
+		background: white;
+	}
+
+	.veto-matrix-cell.veto-column {
+		border: 2px solid #007bff;
+		background-color: white;
+	}
+
+	.veto-matrix-cell.selected-alternative {
+		background-color: #ffc107;
+		font-weight: bold;
+	}
+
+	.veto-matrix-cell.preferred-alternative {
+		background-color: #cce7ff;
+		color: #004085;
+		font-weight: bold;
+	}
+
+	.coalition-arrows {
+		position: absolute;
+		bottom: 1rem;
+		left: 1rem;
+		right: 1rem;
+		height: 2.5rem;
+		pointer-events: none;
+	}
+
+	.coalition-arrow {
+		position: absolute;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		transform: translateX(-50%);
+	}
+
+	.arrow-pointer {
+		font-size: 1.5rem;
+		color: #007bff;
+		font-weight: bold;
+		line-height: 1;
+		text-shadow: 0 0 3px white;
+	}
+
+	.arrow-label {
+		font-size: 0.75rem;
+		color: #007bff;
+		font-weight: bold;
+		margin-top: 0.25rem;
+		background: white;
+		padding: 0 0.25rem;
+		border-radius: 2px;
+		white-space: nowrap;
 	}
 </style>
