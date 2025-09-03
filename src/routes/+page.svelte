@@ -24,6 +24,11 @@
 	let B: string[] = [];
 	let lambda_B_over_P = 0;
 
+	// Section visibility flags
+	let showMatrix = false;
+	let showPVC = false;
+	let showVetoCoalition = false;
+
 	// Initialize preferences matrix
 	function initializeMatrix() {
 		preferences = Array(m)
@@ -46,6 +51,9 @@
 			}
 		}
 		preferences = [...preferences]; // trigger reactivity
+		showMatrix = true;
+		showPVC = false;
+		showVetoCoalition = false;
 	}
 
 	// Randomize preferences
@@ -60,6 +68,9 @@
 			}
 		}
 		preferences = [...preferences]; // trigger reactivity
+		showMatrix = true;
+		showPVC = false;
+		showVetoCoalition = false;
 	}
 
 	// Validate a column (voter's preferences)
@@ -67,6 +78,16 @@
 		const column = preferences.map((row) => row[colIndex]);
 		const alternatives = getAlternatives();
 		return validateVoterPreferences(column, alternatives);
+	}
+
+	// Check if all columns are valid
+	function isMatrixValid(): boolean {
+		for (let col = 0; col < n; col++) {
+			if (!isColumnValid(col)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	// PVC computation using veto coalition logic
@@ -96,6 +117,9 @@
 
 		// Store which alternatives were found through successive elimination for highlighting
 		successivelyEliminatedAlternatives = successivelyEliminatedPVC;
+
+		showPVC = true;
+		showVetoCoalition = false;
 	}
 
 	// Track alternatives found through successive elimination
@@ -116,6 +140,8 @@
 		v_T = result.dashboardValues.v_T;
 		B = result.dashboardValues.B;
 		lambda_B_over_P = result.dashboardValues.lambda_B_over_P;
+
+		showVetoCoalition = true;
 	}
 
 	// Clear veto coalition display
@@ -137,6 +163,9 @@
 		selectedAlternative = '';
 		vetoCoalition = [];
 		preferredAlternatives = [];
+		showMatrix = false;
+		showPVC = false;
+		showVetoCoalition = false;
 	}
 
 	// Handle preference cell change
@@ -174,75 +203,72 @@
 		</div>
 	</section>
 
-	<!-- Section 2: Voter Preferences and PVC -->
+	<!-- Section 2: Voter Preferences -->
 	<section class="section">
-		<div class="two-columns">
-			<!-- Left: Voter Preference Matrix -->
-			<div class="column">
-				<div class="column-header">
-					<h3>Voter Preference</h3>
-				</div>
-				<div class="matrix">
-					{#each preferences as row, rowIndex}
-						<div class="matrix-row">
-							{#each row as cell, colIndex}
-								<input
-									type="text"
-									maxlength="1"
-									bind:value={cell}
-									on:input={(e) => onPreferenceChange(rowIndex, colIndex, e.target.value)}
-									class="matrix-cell"
-									class:invalid={!isColumnValid(colIndex)}
-								/>
-							{/each}
-						</div>
-					{/each}
-				</div>
-				<button on:click={computePVC} class="compute-btn">Compute PVC</button>
-			</div>
-
-			<!-- Right: PVC Display -->
-			<div class="column">
-				<div class="column-header">
-					<h3>PVC</h3>
-				</div>
-				<div class="pvc-list">
-					{#each getAlternatives() as alternative}
-						<div
-							class="pvc-item"
-							class:in-pvc={pvc.includes(alternative)}
-							class:not-in-pvc={!pvc.includes(alternative)}
-							class:highlighted={vetoCoalition.length > 0 && selectedAlternative === alternative}
-							class:successive-elimination={successivelyEliminatedAlternatives.includes(
-								alternative
-							)}
-							on:click={() => onAlternativeClick(alternative)}
-							role="button"
-							tabindex="0"
-						>
-							{alternative}
-						</div>
-					{/each}
-				</div>
-				<p class="instruction">Click on any alternative to see a veto coalition</p>
-				<div class="legend">
-					<span class="legend-item">
-						<span class="color-box green"></span> In PVC
-					</span>
-					<span class="legend-item">
-						<span class="color-box yellow"></span> Not in PVC
-					</span>
-					<span class="legend-item">
-						<span class="border-box successive-border"></span> Successive Elimination Result
-					</span>
-				</div>
-			</div>
+		<div class="column-header">
+			<h3>Voter Preference</h3>
+			<p>Click on any cell to edit the alternative.</p>
 		</div>
+		<div class="matrix">
+			{#each preferences as row, rowIndex}
+				<div class="matrix-row">
+					{#each row as cell, colIndex}
+						<input
+							type="text"
+							maxlength="1"
+							bind:value={cell}
+							on:input={(e) => onPreferenceChange(rowIndex, colIndex, e.target.value)}
+							class="matrix-cell"
+							class:invalid={!isColumnValid(colIndex)}
+						/>
+					{/each}
+				</div>
+			{/each}
+		</div>
+		<button on:click={computePVC} class="compute-btn" disabled={!isMatrixValid()}>Compute PVC</button>
 	</section>
 
-	<!-- Section 3: Veto Coalition Dashboard -->
-	<section class="section">
-		{#if selectedAlternative}
+	<!-- Section 3: PVC -->
+	{#if showPVC}
+		<section class="section">
+			<div class="column-header">
+				<h3>PVC</h3>
+				<p class="instruction">Click on any alternative below to see a veto coalition</p>
+			</div>
+			<div class="pvc-list-horizontal">
+				{#each getAlternatives() as alternative}
+					<div
+						class="pvc-item"
+						class:in-pvc={pvc.includes(alternative)}
+						class:not-in-pvc={!pvc.includes(alternative)}
+						class:highlighted={vetoCoalition.length > 0 && selectedAlternative === alternative}
+						class:successive-elimination={successivelyEliminatedAlternatives.includes(alternative)}
+						on:click={() => onAlternativeClick(alternative)}
+						role="button"
+						tabindex="0"
+					>
+						{alternative}
+					</div>
+				{/each}
+			</div>
+
+			<div class="legend">
+				<span class="legend-item">
+					<span class="border-box successive-border"></span> Successive Elimination Result
+				</span>
+				<span class="legend-item">
+					<span class="color-box green"></span> In PVC
+				</span>
+				<span class="legend-item">
+					<span class="color-box yellow"></span> Not in PVC
+				</span>
+			</div>
+		</section>
+	{/if}
+
+	<!-- Section 4: Veto Coalition Dashboard -->
+	{#if showVetoCoalition && selectedAlternative}
+		<section class="section">
 			<div class="veto-dashboard">
 				{#if preferredAlternatives.length > 0}
 					<div class="analysis-section found">
@@ -257,7 +283,7 @@
 								<strong>Preferred Alternatives (B):</strong> [{preferredAlternatives.join(', ')}]
 							</p>
 							<p>
-								<strong>Proportion of preferred alternatives (|B|/m):</strong>
+								<strong>Relative size of preferred alternatives (|B|/m):</strong>
 								{Math.round(lambda_B_over_P * 1000) / 1000}
 							</p>
 						</div>
@@ -265,17 +291,7 @@
 
 					<div class="veto-matrix-section">
 						<h4>Veto Coalition Preference Matrix</h4>
-						<div class="veto-matrix-legend">
-							<span class="legend-item">
-								<span class="coalition-arrow-legend">↑</span> Coalition Members
-							</span>
-							<span class="legend-item">
-								<span class="color-box selected-alt-legend"></span> Vetoed Alternative
-							</span>
-							<span class="legend-item">
-								<span class="color-box preferred-alt-legend"></span> Preferred Alternatives
-							</span>
-						</div>
+
 						<div class="veto-matrix-container">
 							<div class="veto-matrix">
 								{#each preferences as row, rowIndex}
@@ -306,6 +322,17 @@
 									{/if}
 								{/each}
 							</div>
+						</div>
+						<div class="veto-matrix-legend">
+							<span class="legend-item">
+								<span class="coalition-arrow-legend">↑</span> Coalition Members
+							</span>
+							<span class="legend-item">
+								<span class="color-box selected-alt-legend"></span> Vetoed Alternative
+							</span>
+							<span class="legend-item">
+								<span class="color-box preferred-alt-legend"></span> Preferred Alternatives
+							</span>
 						</div>
 					</div>
 
@@ -364,12 +391,12 @@
 					<button on:click={clearVetoCoalition} class="clear-btn">Clear Analysis</button>
 				{/if}
 			</div>
-		{:else}
-			<div class="instruction-section">
-				<p>Click on any alternative above on the right to analyze its veto coalition</p>
-			</div>
-		{/if}
-	</section>
+		</section>
+	{/if}
+
+	<footer class="contact-footer">
+		<p>Contact: jeqin_chooi@college.harvard.edu</p>
+	</footer>
 </main>
 
 <style>
@@ -424,12 +451,6 @@
 		background: #0056b3;
 	}
 
-	.two-columns {
-		display: grid;
-		grid-template-columns: 2fr 1fr;
-		gap: 2rem;
-	}
-
 	.column-header {
 		min-height: 60px;
 		display: flex;
@@ -477,6 +498,16 @@
 		background: #1e7e34;
 	}
 
+	.compute-btn:disabled {
+		background: #6c757d;
+		cursor: not-allowed;
+		opacity: 0.6;
+	}
+
+	.compute-btn:disabled:hover {
+		background: #6c757d;
+	}
+
 	.legend {
 		display: flex;
 		gap: 1rem;
@@ -521,11 +552,13 @@
 		box-shadow: 0 0 0 1px #6f42c1;
 	}
 
-	.pvc-list {
+	.pvc-list-horizontal {
 		display: flex;
-		flex-direction: column;
-		gap: 2px;
+		flex-direction: row;
+		flex-wrap: wrap;
+		gap: 4px;
 		margin-top: 2px;
+		margin-bottom: 1rem;
 	}
 
 	.pvc-item {
@@ -618,10 +651,6 @@
 
 	.metrics-section {
 		margin-bottom: 2rem;
-	}
-
-	.metrics-section h4 {
-		margin: 0 0 1rem 0;
 	}
 
 	.veto-explanation {
@@ -855,5 +884,19 @@
 		padding: 0 0.25rem;
 		border-radius: 2px;
 		white-space: nowrap;
+	}
+
+	.contact-footer {
+		margin-top: 3rem;
+		padding: 1rem 0;
+		text-align: center;
+		border-top: 1px solid #eee;
+	}
+
+	.contact-footer p {
+		margin: 0;
+		color: #888;
+		font-size: 0.85rem;
+		font-style: italic;
 	}
 </style>
