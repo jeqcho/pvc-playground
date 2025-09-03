@@ -9,6 +9,10 @@ function assert(condition: boolean, message?: string): asserts condition {
 	}
 }
 
+export function areNumbersApproximatelyEqual(num1: number, num2: number, tolerance: number = Number.EPSILON): boolean {
+	return Math.abs(num1 - num2) < tolerance;
+}
+
 export type Alternative = string;
 export type VoterPreference = Alternative[];
 export type PreferenceProfile = VoterPreference[];
@@ -138,6 +142,7 @@ function checkVetoCoalition(
 	preferences: string[][],
 	alternatives: Alternative[]
 ): { canVeto: boolean; preferredAlternatives: Alternative[] } {
+	console.log(`trying to veto ${alternative} with coalition, `, coalition);
 	if (coalition.length === 0) {
 		return { canVeto: false, preferredAlternatives: [] };
 	}
@@ -146,14 +151,14 @@ function checkVetoCoalition(
 	const coalitionProfiles: number[][] = [];
 	const altToIndex = new Map<Alternative, number>();
 	alternatives.forEach((alt, idx) => altToIndex.set(alt, idx));
-	
+
 	const m = alternatives.length;
 	for (const voterIndex of coalition) {
 		const voterPrefs: number[] = [];
 		for (let rank = 0; rank < m; rank++) {
 			const alt = preferences[rank][voterIndex];
 			const index = altToIndex.get(alt) ?? -1;
-			if (index === -1) return { canVeto: false, preferredAlternatives: [] }; // Invalid preference
+			assert(index != -1);
 			voterPrefs.push(index);
 		}
 		coalitionProfiles.push(voterPrefs);
@@ -166,18 +171,18 @@ function checkVetoCoalition(
 
 	// Find alternatives preferred by all coalition members over the target alternative
 	const preferredByAll: Set<number> = new Set();
-	
+
 	// Start with alternatives preferred by first coalition member
 	const firstVoterPrefs = coalitionProfiles[0];
 	const targetRankInFirst = firstVoterPrefs.indexOf(targetAltIndex);
 	if (targetRankInFirst === -1) {
 		return { canVeto: false, preferredAlternatives: [] };
 	}
-	
+
 	for (let rank = 0; rank < targetRankInFirst; rank++) {
 		preferredByAll.add(firstVoterPrefs[rank]);
 	}
-	
+
 	// Intersect with preferences of other coalition members
 	for (let i = 1; i < coalitionProfiles.length; i++) {
 		const voterPrefs = coalitionProfiles[i];
@@ -185,12 +190,12 @@ function checkVetoCoalition(
 		if (targetRankInVoter === -1) {
 			return { canVeto: false, preferredAlternatives: [] };
 		}
-		
+
 		const voterPreferred = new Set<number>();
 		for (let rank = 0; rank < targetRankInVoter; rank++) {
 			voterPreferred.add(voterPrefs[rank]);
 		}
-		
+
 		// Keep only alternatives preferred by both current voter and previous intersection
 		const newPreferredByAll = new Set<number>();
 		for (const alt of preferredByAll) {
@@ -207,10 +212,16 @@ function checkVetoCoalition(
 	const n = preferences[0]?.length || 0;
 	const T_size = coalition.length;
 	const B_size = preferredByAll.size;
-	
-	const canVeto = (1 - T_size / n) <= (B_size / m);
+
+	const veto_power = T_size / n;
+	const veto_size = 1 - (B_size / m);
+	const canVeto = (veto_power > veto_size) || areNumbersApproximatelyEqual(veto_power, veto_size);
 	const preferredAlternatives = Array.from(preferredByAll).map(idx => alternatives[idx]);
-	
+	console.log(`T_size / n: ${T_size / n}`);
+	console.log(`1-B_size / m: ${1 - B_size / m}`);
+	console.log(`canVeto: ${canVeto}`);
+	console.log(`preferredAlternatives:`, preferredAlternatives);
+
 	return { canVeto, preferredAlternatives };
 }
 
@@ -245,14 +256,10 @@ export function computeVetoCoalition(
 		}
 
 		const result = checkVetoCoalition(alternative, coalition, preferences, alternatives);
-		
-		if (result.canVeto) {
-			// TODO: Add logic to select the "best" veto coalition
-			// For now, take the first valid one found
-			if (bestCoalition.length === 0) {
-				bestCoalition = coalition;
-				bestPreferred = result.preferredAlternatives;
-			}
+
+		if (result.canVeto && result.preferredAlternatives.length > 0) {
+			bestCoalition = coalition;
+			bestPreferred = result.preferredAlternatives;
 		}
 	}
 
@@ -260,9 +267,9 @@ export function computeVetoCoalition(
 	const dashboardValues = {
 		T: bestCoalition.length,
 		T_size: bestCoalition.length,
-		v_T: bestCoalition.length/n,
+		v_T: bestCoalition.length / n,
 		B: bestPreferred,
-		lambda_B_over_P: bestPreferred.length/m // TODO: Implement actual lambda(B)/lambda(P) calculation
+		lambda_B_over_P: bestPreferred.length / m // TODO: Implement actual lambda(B)/lambda(P) calculation
 	};
 
 	return {

@@ -6,6 +6,7 @@
 		validateVoterPreferences,
 		matrixToProfile,
 		generateAlternatives,
+		areNumbersApproximatelyEqual,
 		type VetoCoalitionResult
 	} from '$lib/pvc';
 
@@ -363,15 +364,15 @@
 
 					<div class="condition-result">
 						<div
-							class="condition-check {v_T >= 1 - lambda_B_over_P ? 'satisfied' : 'not-satisfied'}"
+							class="condition-check {( (v_T >= 1 - lambda_B_over_P) || areNumbersApproximatelyEqual(v_T,1 - lambda_B_over_P )) ? 'satisfied' : 'not-satisfied'}"
 						>
 							<span class="condition-text">
 								{Math.round(v_T * 1000) / 1000}
-								{v_T >= 1 - lambda_B_over_P ? '≥' : '<'}
+								{( (v_T >= 1 - lambda_B_over_P) || areNumbersApproximatelyEqual(v_T,1 - lambda_B_over_P )) ? '≥' : '<'}
 								{Math.round((1 - lambda_B_over_P) * 1000) / 1000}
 							</span>
 							<span class="condition-status">
-								{v_T >= 1 - lambda_B_over_P ? '✓ Condition Satisfied' : '✗ Condition Not Satisfied'}
+								{( (v_T >= 1 - lambda_B_over_P) || areNumbersApproximatelyEqual(v_T,1 - lambda_B_over_P )) ? '✓ Condition Satisfied' : '✗ Condition Not Satisfied'}
 							</span>
 						</div>
 					</div>
