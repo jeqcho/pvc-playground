@@ -1,53 +1,102 @@
-# sv
+# Proportional Veto Core Playground
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+An interactive educational tool for exploring the **Proportional Veto Core (PVC)**, a social choice mechanism that determines which alternatives can survive coalition-based veto power.
 
-## Creating a project
+## What is the Proportional Veto Core?
 
-If you're seeing this, you've probably already done this step. Congrats!
+The Proportional Veto Core is a solution concept in social choice theory where alternatives survive if no coalition of voters can veto them according to the proportional veto condition:
 
-```sh
-# create a new project in the current directory
-npx sv create
+**|T|/n ≥ 1 - |B|/m**
 
-# create a new project in my-app
-npx sv create my-app
-```
+Where:
+- **T** = Coalition of voters
+- **|T|/n** = Voting power (proportion of voters in coalition)
+- **B** = Alternatives preferred by all coalition members over the target
+- **|B|/m** = Relative size of preferred alternatives
 
-## Developing
+## Features
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+### 🎛️ Interactive Parameter Setting
+- Adjust **m** (number of alternatives) and **n** (number of voters)
+- Initialize preference matrices with identical or randomized preferences
 
-```sh
+### 📊 Preference Matrix Editor
+- Edit voter preferences with real-time validation
+- Visual feedback for invalid entries (duplicates, incorrect alternatives)
+- Smart validation prevents computing PVC with invalid data
+
+### 🎯 PVC Computation
+- **Veto-based method**: Finds alternatives that cannot be vetoed by any coalition
+- **Successive elimination method**: Traditional approach for comparison (highlighted with purple border)
+- Horizontal display of all alternatives with color coding:
+  - 🟢 **Green**: In PVC (cannot be vetoed)
+  - 🟡 **Yellow**: Not in PVC (can be vetoed)
+
+### 🔍 Veto Coalition Analysis
+- Click any alternative to analyze its veto coalitions
+- **Coalition visualization**: Arrows point to coalition members in preference matrix
+- **Preferred alternatives**: Light blue highlighting shows alternatives preferred over the selected one
+- **Vetoed alternative**: Yellow highlighting shows the target alternative
+- **Mathematical dashboard**: Real-time calculation of voting power and veto conditions
+
+### 📈 Educational Dashboard
+- **Voting Power (|T|/n)**: Proportion of voters in the coalition
+- **Veto Size (1-|B|/m)**: Cost of vetoing the alternative
+- **Condition Check**: Visual verification of whether veto condition is satisfied
+- **Detailed explanations**: Mathematical formulas and interpretations
+
+## Technology Stack
+
+- **Frontend**: SvelteKit with TypeScript
+- **Styling**: Custom CSS with responsive design
+- **Mathematics**: Custom implementation of PVC algorithms
+- **Deployment**: Static site generation with `@sveltejs/adapter-static`
+
+## Development
+
+### Prerequisites
+- Node.js 18+ 
+- npm, pnpm, or yarn
+
+### Getting Started
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
 
-# or start the server and open the app in a new browser tab
+# Open in browser
 npm run dev -- --open
 ```
 
-## Building
+### Building for Production
 
-To create a production version of your app:
-
-```sh
+```bash
+# Build static site
 npm run build
+
+# Preview production build
+npm run preview
 ```
 
-You can preview the production build with `npm run preview`.
+## Educational Use
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+This tool is designed for:
+- **Students** learning social choice theory and voting mechanisms
+- **Researchers** exploring PVC properties with different preference profiles  
+- **Educators** demonstrating coalition-based veto concepts
+- **Anyone** curious about mathematical approaches to group decision-making
 
----
-```markdown
-This website is to be used as a playground to understand the social choice theorem known as the proportional veto core.
+## Mathematical Background
 
-The website has three sections.
+The PVC implements a proportional veto mechanism where:
+1. Each voter gets veto power proportional to **1/n**
+2. The "cost" of vetoing an alternative depends on how many alternatives the coalition prefers
+3. An alternative survives if no coalition has enough veto power to eliminate it
+4. This creates a balance between majority rule and minority protection
 
-The first section lets users input m (the number of alternatives) and n (the number of voters). Below that, there is a subsection called "Initialize matrix" with two buttons: "Identical preferences" and "Randomize"
+## Contact
 
-The second section has two sections side by side. The left subsection is a m x n table, titled "Voter Preference". Note that each column correspond to the preference of a voter. The entries are a-z on each column (depending on m). Users can edit this matrix, but there's automatic validation that will outline a column in red if validation fails (e.g. if there are duplicate entries, empty entries of letters that are not the first m letters). Below the matrix there is a button called "Compute PVC". The right subsection is a single column of m rows. This is titled "PVC". The alternatives in the PVC will be in the first few rows and coloured in green, while those not in the PVC will be coloured in red in the bottom few rows. Below the title, there is a legend explaining the two colours.
-
-The third section has an instruction "Click on any alternative that is not in the PVC to see a veto coalition". This is followed by a dashboard of quantities: T, |T|, v(T), B, lambda(B)/lambda(P). When a user clicks on a red alternative (say R) in the right subsection, the website will compute a veto coalition (basically a set of voters), highlight these corresponding columns, mark R as red in these columns, come up with B (a set of alternatives that is preferred over R) across all these voters, and circle them in blue.
-
-For now, focus on the front end. The main logic for computing PVC should just be dummy function that returns the first 2 alternatives (a and b) for now (if there are <2 alternatives, then just output the whole list). The main logic for computing the veto coalition will just be the first and third voter for now (if there are <3 voters, then just output the first voter). We will work on the logic later.
-```
+For questions or feedback: jeqin_chooi@college.harvard.edu
