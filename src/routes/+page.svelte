@@ -69,11 +69,37 @@
 		return validateVoterPreferences(column, alternatives);
 	}
 
-	// PVC computation
+	// PVC computation using veto coalition logic
 	function computePVC() {
 		const alternatives = getAlternatives();
-		pvc = computePVCLogic(preferences, alternatives);
+
+		// Find alternatives that can be vetoed
+		const vetoableAlternatives = [];
+		const nonVetoableAlternatives = [];
+
+		for (const alternative of alternatives) {
+			const result = computeVetoCoalitionLogic(alternative, preferences, alternatives, []);
+			if (result.preferredAlternatives.length > 0) {
+				// This alternative can be vetoed
+				vetoableAlternatives.push(alternative);
+			} else {
+				// This alternative cannot be vetoed
+				nonVetoableAlternatives.push(alternative);
+			}
+		}
+
+		// PVC consists of alternatives that cannot be vetoed
+		pvc = nonVetoableAlternatives;
+
+		// Also compute using the successive elimination method for highlighting
+		const successivelyEliminatedPVC = computePVCLogic(preferences, alternatives);
+
+		// Store which alternatives were found through successive elimination for highlighting
+		successivelyEliminatedAlternatives = successivelyEliminatedPVC;
 	}
+
+	// Track alternatives found through successive elimination
+	let successivelyEliminatedAlternatives: string[] = [];
 
 	// Handle alternative click
 	function onAlternativeClick(alternative: string) {
@@ -187,6 +213,9 @@
 							class:in-pvc={pvc.includes(alternative)}
 							class:not-in-pvc={!pvc.includes(alternative)}
 							class:highlighted={vetoCoalition.length > 0 && selectedAlternative === alternative}
+							class:successive-elimination={successivelyEliminatedAlternatives.includes(
+								alternative
+							)}
 							on:click={() => onAlternativeClick(alternative)}
 							role="button"
 							tabindex="0"
@@ -202,6 +231,9 @@
 					</span>
 					<span class="legend-item">
 						<span class="color-box yellow"></span> Not in PVC
+					</span>
+					<span class="legend-item">
+						<span class="border-box successive-border"></span> Successive Elimination Result
 					</span>
 				</div>
 			</div>
@@ -221,8 +253,13 @@
 									.map((i) => i + 1)
 									.join(', ')}
 							</p>
-							<p><strong>Preferred Alternatives (B):</strong> [{preferredAlternatives.join(', ')}]</p>
-							<p><strong>Proportion of preferred alternatives (|B|/m):</strong> {Math.round(lambda_B_over_P * 1000) / 1000}</p>
+							<p>
+								<strong>Preferred Alternatives (B):</strong> [{preferredAlternatives.join(', ')}]
+							</p>
+							<p>
+								<strong>Proportion of preferred alternatives (|B|/m):</strong>
+								{Math.round(lambda_B_over_P * 1000) / 1000}
+							</p>
 						</div>
 					</div>
 
@@ -244,11 +281,14 @@
 								{#each preferences as row, rowIndex}
 									<div class="veto-matrix-row">
 										{#each row as cell, colIndex}
-											<div 
+											<div
 												class="veto-matrix-cell"
 												class:veto-column={vetoCoalition.includes(colIndex)}
-												class:selected-alternative={vetoCoalition.includes(colIndex) && cell === selectedAlternative}
-												class:preferred-alternative={vetoCoalition.includes(colIndex) && preferredAlternatives.includes(cell) && cell !== selectedAlternative}
+												class:selected-alternative={vetoCoalition.includes(colIndex) &&
+													cell === selectedAlternative}
+												class:preferred-alternative={vetoCoalition.includes(colIndex) &&
+													preferredAlternatives.includes(cell) &&
+													cell !== selectedAlternative}
 											>
 												{cell}
 											</div>
@@ -282,34 +322,44 @@
 							<div class="metric-item">
 								<div class="metric-symbol">1-|B|/m</div>
 								<div class="metric-details">
-									<div class="metric-label">Size of Veto</div>
+									<div class="metric-label">Veto size</div>
 									<div class="metric-value">{Math.round((1 - lambda_B_over_P) * 1000) / 1000}</div>
 								</div>
 							</div>
 						</div>
-						
 					</div>
-					<p class="veto-explanation">An alternative is vetoed if the voting power of the coalition can afford the size of the veto: <strong>|T|/n ≥ 1 - |B|/m</strong></p>
-						
-						<div class="condition-result">
-							<div class="condition-check {v_T >= (1 - lambda_B_over_P) ? 'satisfied' : 'not-satisfied'}">
-								<span class="condition-text">
-									{Math.round(v_T * 1000) / 1000} 
-									{v_T >= (1 - lambda_B_over_P) ? '≥' : '<'} 
-									{Math.round((1 - lambda_B_over_P) * 1000) / 1000}
-								</span>
-								<span class="condition-status">
-									{v_T >= (1 - lambda_B_over_P) ? '✓ Condition Satisfied' : '✗ Condition Not Satisfied'}
-								</span>
-							</div>
+					<p class="veto-explanation">
+						An alternative is vetoed if the voting power of the coalition can afford the veto size: <strong
+							>|T|/n ≥ 1 - |B|/m</strong
+						>
+					</p>
+
+					<div class="condition-result">
+						<div
+							class="condition-check {v_T >= 1 - lambda_B_over_P ? 'satisfied' : 'not-satisfied'}"
+						>
+							<span class="condition-text">
+								{Math.round(v_T * 1000) / 1000}
+								{v_T >= 1 - lambda_B_over_P ? '≥' : '<'}
+								{Math.round((1 - lambda_B_over_P) * 1000) / 1000}
+							</span>
+							<span class="condition-status">
+								{v_T >= 1 - lambda_B_over_P ? '✓ Condition Satisfied' : '✗ Condition Not Satisfied'}
+							</span>
 						</div>
+					</div>
 
 					<button on:click={clearVetoCoalition} class="clear-btn">Clear Analysis</button>
 				{:else}
 					<div class="analysis-section not-found">
 						<h4>No Veto Coalition Found</h4>
-						<p>No coalition of voters can veto alternative <strong>{selectedAlternative}</strong></p>
-						<p class="no-veto-explanation">This alternative cannot be eliminated through the proportional veto mechanism with the current preference profile.</p>
+						<p>
+							No coalition of voters can veto alternative <strong>{selectedAlternative}</strong>
+						</p>
+						<p class="no-veto-explanation">
+							This alternative cannot be eliminated through the proportional veto mechanism with the
+							current preference profile.
+						</p>
 					</div>
 					<button on:click={clearVetoCoalition} class="clear-btn">Clear Analysis</button>
 				{/if}
@@ -459,6 +509,18 @@
 		background: #ffc107;
 	}
 
+	.border-box {
+		width: 20px;
+		height: 20px;
+		border-radius: 4px;
+		background: white;
+	}
+
+	.successive-border {
+		border: 3px solid #6f42c1;
+		box-shadow: 0 0 0 1px #6f42c1;
+	}
+
 	.pvc-list {
 		display: flex;
 		flex-direction: column;
@@ -506,6 +568,11 @@
 
 	.pvc-item.highlighted {
 		outline: 3px solid #007bff;
+	}
+
+	.pvc-item.successive-elimination {
+		border: 3px solid #6f42c1;
+		box-shadow: 0 0 0 1px #6f42c1;
 	}
 
 	.veto-dashboard {
@@ -686,7 +753,6 @@
 		border-radius: 4px;
 		border: 1px solid #dee2e6;
 	}
-
 
 	.coalition-arrow-legend {
 		color: #007bff;
