@@ -612,12 +612,6 @@
 		padding: 1rem;
 	}
 
-	.instruction-section {
-		padding: 2rem;
-		text-align: center;
-		color: #666;
-		font-style: italic;
-	}
 
 	.analysis-section {
 		margin-bottom: 2rem;
