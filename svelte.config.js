@@ -7,7 +7,8 @@ const config = {
 	// for more information about preprocessors
 	preprocess: vitePreprocess(),
 	kit: {
-        adapter: adapter(),
+		appDir: 'app', // Required as the default is _app
+        adapter: adapter({base:process.argv.includes('dev') ? '' : "pvc-playground"}),
     }
 };
 
