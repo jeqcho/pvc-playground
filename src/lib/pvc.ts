@@ -125,6 +125,96 @@ export function computePVC(preferences: string[][], alternatives: Alternative[])
 }
 
 /**
+ * Check if a coalition of voters can veto an alternative
+ * @param alternative - The alternative to check
+ * @param coalition - Indices of voters in the coalition
+ * @param preferences - Preference matrix
+ * @param alternatives - List of all alternatives
+ * @returns Object with veto result and preferred alternatives
+ */
+function checkVetoCoalition(
+	alternative: Alternative,
+	coalition: number[],
+	preferences: string[][],
+	alternatives: Alternative[]
+): { canVeto: boolean; preferredAlternatives: Alternative[] } {
+	if (coalition.length === 0) {
+		return { canVeto: false, preferredAlternatives: [] };
+	}
+
+	// Convert preference matrix to profile format for coalition voters
+	const coalitionProfiles: number[][] = [];
+	const altToIndex = new Map<Alternative, number>();
+	alternatives.forEach((alt, idx) => altToIndex.set(alt, idx));
+	
+	const m = alternatives.length;
+	for (const voterIndex of coalition) {
+		const voterPrefs: number[] = [];
+		for (let rank = 0; rank < m; rank++) {
+			const alt = preferences[rank][voterIndex];
+			const index = altToIndex.get(alt) ?? -1;
+			if (index === -1) return { canVeto: false, preferredAlternatives: [] }; // Invalid preference
+			voterPrefs.push(index);
+		}
+		coalitionProfiles.push(voterPrefs);
+	}
+
+	const targetAltIndex = altToIndex.get(alternative);
+	if (targetAltIndex === undefined) {
+		return { canVeto: false, preferredAlternatives: [] };
+	}
+
+	// Find alternatives preferred by all coalition members over the target alternative
+	const preferredByAll: Set<number> = new Set();
+	
+	// Start with alternatives preferred by first coalition member
+	const firstVoterPrefs = coalitionProfiles[0];
+	const targetRankInFirst = firstVoterPrefs.indexOf(targetAltIndex);
+	if (targetRankInFirst === -1) {
+		return { canVeto: false, preferredAlternatives: [] };
+	}
+	
+	for (let rank = 0; rank < targetRankInFirst; rank++) {
+		preferredByAll.add(firstVoterPrefs[rank]);
+	}
+	
+	// Intersect with preferences of other coalition members
+	for (let i = 1; i < coalitionProfiles.length; i++) {
+		const voterPrefs = coalitionProfiles[i];
+		const targetRankInVoter = voterPrefs.indexOf(targetAltIndex);
+		if (targetRankInVoter === -1) {
+			return { canVeto: false, preferredAlternatives: [] };
+		}
+		
+		const voterPreferred = new Set<number>();
+		for (let rank = 0; rank < targetRankInVoter; rank++) {
+			voterPreferred.add(voterPrefs[rank]);
+		}
+		
+		// Keep only alternatives preferred by both current voter and previous intersection
+		const newPreferredByAll = new Set<number>();
+		for (const alt of preferredByAll) {
+			if (voterPreferred.has(alt)) {
+				newPreferredByAll.add(alt);
+			}
+		}
+		preferredByAll.clear();
+		newPreferredByAll.forEach(alt => preferredByAll.add(alt));
+	}
+
+	// A coalition can veto if they satisfy the PVC veto condition:
+	// 1 - |T|/n <= |B|/m, where T is coalition size, B is preferred alternatives
+	const n = preferences[0]?.length || 0;
+	const T_size = coalition.length;
+	const B_size = preferredByAll.size;
+	
+	const canVeto = (1 - T_size / n) <= (B_size / m);
+	const preferredAlternatives = Array.from(preferredByAll).map(idx => alternatives[idx]);
+	
+	return { canVeto, preferredAlternatives };
+}
+
+/**
  * Compute a veto coalition for a given alternative not in the PVC
  * @param alternative - The alternative to find a veto coalition for
  * @param preferences - Matrix where preferences[i][j] is the i-th ranked alternative for voter j
@@ -138,29 +228,47 @@ export function computeVetoCoalition(
 	alternatives: Alternative[],
 	pvc: Alternative[]
 ): VetoCoalitionResult {
+	const m = alternatives.length;
 	const n = preferences[0]?.length || 0; // number of voters
 
-	// TODO: Implement actual veto coalition computation logic
-	// For now, return dummy result (voters 0 and 2, or just 0 if n < 3)
-	const coalition = n < 3 ? [0] : [0, 2];
+	// Iterate over all 2^n possible coalitions (excluding empty set)
+	let bestCoalition: number[] = [];
+	let bestPreferred: Alternative[] = [];
 
-	// Compute preferred alternatives (dummy logic for now)
-	const altIndex = alternatives.indexOf(alternative);
-	const preferredAlternatives = alternatives.slice(0, altIndex);
+	for (let coalitionMask = 1; coalitionMask < (1 << n); coalitionMask++) {
+		// Convert bit mask to coalition indices
+		const coalition: number[] = [];
+		for (let voter = 0; voter < n; voter++) {
+			if (coalitionMask & (1 << voter)) {
+				coalition.push(voter);
+			}
+		}
 
-	// Dashboard values (dummy for now)
+		const result = checkVetoCoalition(alternative, coalition, preferences, alternatives);
+		
+		if (result.canVeto) {
+			// TODO: Add logic to select the "best" veto coalition
+			// For now, take the first valid one found
+			if (bestCoalition.length === 0) {
+				bestCoalition = coalition;
+				bestPreferred = result.preferredAlternatives;
+			}
+		}
+	}
+
+	// Dashboard values
 	const dashboardValues = {
-		T: coalition.length,
-		T_size: coalition.length,
-		v_T: Math.floor(Math.random() * 10),
-		B: preferredAlternatives,
-		lambda_B_over_P: Math.random()
+		T: bestCoalition.length,
+		T_size: bestCoalition.length,
+		v_T: bestCoalition.length/n,
+		B: bestPreferred,
+		lambda_B_over_P: bestPreferred.length/m // TODO: Implement actual lambda(B)/lambda(P) calculation
 	};
 
 	return {
-		coalition,
+		coalition: bestCoalition,
 		selectedAlternative: alternative,
-		preferredAlternatives,
+		preferredAlternatives: bestPreferred,
 		dashboardValues
 	};
 }
