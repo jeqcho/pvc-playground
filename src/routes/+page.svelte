@@ -170,9 +170,14 @@
 	}
 
 	// Handle preference cell change
-	function onPreferenceChange(row: number, col: number, value: string) {
-		preferences[row][col] = value.toLowerCase();
-		preferences = [...preferences]; // trigger reactivity
+	function onPreferenceChange(row: number, col: number, event: Event) {
+		const target = event.target as HTMLInputElement;
+		console.log("preference changed");
+		if (target) {
+			preferences[row][col] = target.value.toLowerCase();
+			preferences = [...preferences]; // trigger reactivity
+			console.log("preferences is now: ", preferences);
+		}
 	}
 
 	onMount(() => {
@@ -218,7 +223,7 @@
 							type="text"
 							maxlength="1"
 							bind:value={cell}
-							on:input={(e) => onPreferenceChange(rowIndex, colIndex, e.target.value)}
+							on:input={(e) => onPreferenceChange(rowIndex, colIndex, e)}
 							class="matrix-cell"
 							class:invalid={!isColumnValid(colIndex)}
 						/>
@@ -283,10 +288,6 @@
 							<p>
 								<strong>Preferred Alternatives (B):</strong> [{preferredAlternatives.join(', ')}]
 							</p>
-							<p>
-								<strong>Relative size of preferred alternatives (|B|/m):</strong>
-								{Math.round(lambda_B_over_P * 1000) / 1000}
-							</p>
 						</div>
 					</div>
 
@@ -340,39 +341,51 @@
 					<div class="metrics-section">
 						<div class="metrics-grid">
 							<div class="metric-item">
-								<div class="metric-symbol">|T|/n</div>
+								<div class="metric-symbol">|T|*(m-1)/n</div>
 								<div class="metric-details">
-									<div class="metric-label">Voting Power</div>
+									<div class="metric-label">Veto Power</div>
 									<div class="metric-value">{Math.round(v_T * 1000) / 1000}</div>
 								</div>
 							</div>
 
 							<div class="metric-item">
-								<div class="metric-symbol">1-|B|/m</div>
+								<div class="metric-symbol">m-|B|</div>
 								<div class="metric-details">
 									<div class="metric-label">Veto size</div>
-									<div class="metric-value">{Math.round((1 - lambda_B_over_P) * 1000) / 1000}</div>
+									<div class="metric-value">{m - B.length}</div>
 								</div>
 							</div>
 						</div>
 					</div>
-					<p class="veto-explanation">
-						An alternative is vetoed if the voting power of the coalition can afford the veto size: <strong
-							>|T|/n ≥ 1 - |B|/m</strong
-						>
-					</p>
+					<div class="explainer-section">
+						<h5>Veto Power Explanation</h5>
+						<ul>
+							<li>
+								To form a winning coalition, we need to eliminate <strong>m-1</strong> candidates (leaving 1 winner), so each voter can veto up to <strong>(m-1)/n</strong> alternatives. This is the veto power of a voter.
+							</li>
+							<li>
+								A coalition of <strong>|T|</strong> voters is their total veto power: <strong>|T|*(m-1)/n</strong>.
+							</li>
+							<li>
+								An alternative is vetoed if the veto power of a coalition is at least the veto size: <strong>|T|*(m-1)/n ≥ m - |B|</strong>.
+							</li>
+							<li>
+								In other words, the coalition has enough veto power to afford the veto size.
+							</li>
+						</ul>
+					</div>
 
 					<div class="condition-result">
 						<div
-							class="condition-check {( (v_T >= 1 - lambda_B_over_P) || areNumbersApproximatelyEqual(v_T,1 - lambda_B_over_P )) ? 'satisfied' : 'not-satisfied'}"
+							class="condition-check {( (v_T >= m - B.length) || areNumbersApproximatelyEqual(v_T,m - B.length )) ? 'satisfied' : 'not-satisfied'}"
 						>
 							<span class="condition-text">
 								{Math.round(v_T * 1000) / 1000}
-								{( (v_T >= 1 - lambda_B_over_P) || areNumbersApproximatelyEqual(v_T,1 - lambda_B_over_P )) ? '≥' : '<'}
-								{Math.round((1 - lambda_B_over_P) * 1000) / 1000}
+								{( (v_T >= m - B.length) || areNumbersApproximatelyEqual(v_T,m - B.length )) ? '≥' : '<'}
+								{Math.round((m - B.length) * 1000) / 1000}
 							</span>
 							<span class="condition-status">
-								{( (v_T >= 1 - lambda_B_over_P) || areNumbersApproximatelyEqual(v_T,1 - lambda_B_over_P )) ? '✓ Condition Satisfied' : '✗ Condition Not Satisfied'}
+								{( (v_T >= m - B.length) || areNumbersApproximatelyEqual(v_T,m - B.length )) ? '✓ Condition Satisfied' : '✗ Condition Not Satisfied'}
 							</span>
 						</div>
 					</div>
@@ -648,14 +661,34 @@
 		margin-bottom: 2rem;
 	}
 
-	.veto-explanation {
-		background: #f8f9fa;
+	.explainer-section {
+		background: #e7f3ff;
 		padding: 1rem;
-		border-left: 4px solid #007bff;
-		border-radius: 4px;
-		margin-bottom: 1.5rem;
-		font-size: 0.95rem;
-		line-height: 1.4;
+		border: 1px solid #b3d9ff;
+		border-radius: 6px;
+		margin-bottom: 1rem;
+	}
+
+	.explainer-section h5 {
+		margin: 0 0 0.75rem 0;
+		color: #0056b3;
+		font-size: 1rem;
+	}
+
+	.explainer-section ul {
+		margin: 0;
+		padding-left: 1.5rem;
+	}
+
+	.explainer-section li {
+		font-size: 0.9rem;
+		line-height: 1.6;
+		color: #333;
+		margin-bottom: 0.75rem;
+	}
+
+	.explainer-section li:last-child {
+		margin-bottom: 0;
 	}
 
 	.condition-result {
