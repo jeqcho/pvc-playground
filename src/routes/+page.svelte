@@ -341,7 +341,7 @@
 					<div class="metrics-section">
 						<div class="metrics-grid">
 							<div class="metric-item">
-								<div class="metric-symbol">|T|*(m-1)/n</div>
+								<div class="metric-symbol">v(T)</div>
 								<div class="metric-details">
 									<div class="metric-label">Veto Power</div>
 									<div class="metric-value">{Math.round(v_T * 1000) / 1000}</div>
@@ -357,24 +357,6 @@
 							</div>
 						</div>
 					</div>
-					<div class="explainer-section">
-						<h5>Veto Power Explanation</h5>
-						<ul>
-							<li>
-								To form a winning coalition, we need to eliminate <strong>m-1</strong> candidates (leaving 1 winner), so each voter can veto up to <strong>(m-1)/n</strong> alternatives. This is the veto power of a voter.
-							</li>
-							<li>
-								A coalition of <strong>|T|</strong> voters is their total veto power: <strong>|T|*(m-1)/n</strong>.
-							</li>
-							<li>
-								An alternative is vetoed if the veto power of a coalition is at least the veto size: <strong>|T|*(m-1)/n ≥ m - |B|</strong>.
-							</li>
-							<li>
-								In other words, the coalition has enough veto power to afford the veto size.
-							</li>
-						</ul>
-					</div>
-
 					<div class="condition-result">
 						<div
 							class="condition-check {( (v_T >= m - B.length) || areNumbersApproximatelyEqual(v_T,m - B.length )) ? 'satisfied' : 'not-satisfied'}"
@@ -385,10 +367,29 @@
 								{Math.round((m - B.length) * 1000) / 1000}
 							</span>
 							<span class="condition-status">
-								{( (v_T >= m - B.length) || areNumbersApproximatelyEqual(v_T,m - B.length )) ? '✓ Condition Satisfied' : '✗ Condition Not Satisfied'}
+								{( (v_T >= m - B.length) || areNumbersApproximatelyEqual(v_T,m - B.length )) ? '✓ Veto Power ≥ Veto Size' : '✗ Veto Power < Veto Size'}
 							</span>
 						</div>
 					</div>
+					<div class="explainer-section">
+						<h5>Veto Power Explanation</h5>
+						<ul>
+							<li>
+								To form a winning coalition, we need to eliminate <strong>m-1</strong> candidates (leaving 1 winner), so each of the <strong>n</strong> voters can veto up to <strong>(m-1)/n</strong> alternatives. This is the veto power of a voter.
+							</li>
+							<li>
+								A coalition <strong>T</strong> of voters has total veto power: <strong>v(T)=|T|*(m-1)/n</strong>.
+							</li>
+							<li>
+								An alternative is vetoed if the veto power of a coalition is at least the veto size: <strong>v(T) ≥ m - |B|</strong>.
+							</li>
+							<li>
+								In other words, the coalition has enough veto power to afford the veto size.
+							</li>
+						</ul>
+					</div>
+
+					
 
 					<button on:click={clearVetoCoalition} class="clear-btn">Clear Analysis</button>
 				{:else}
