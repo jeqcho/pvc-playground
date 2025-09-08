@@ -337,7 +337,6 @@
 							</span>
 						</div>
 					</div>
-
 					<div class="metrics-section">
 						<div class="metrics-grid">
 							<div class="metric-item">
@@ -372,6 +371,17 @@
 						</div>
 					</div>
 					<div class="explainer-section">
+						<h5>Veto Power vs Veto Size</h5>
+						<ul>
+							<li>
+								An alternative is vetoed if the veto power of a coalition is at least the veto size: <strong>v(T) ≥ m - |B|</strong>.
+							</li>
+							<li>
+								In other words, the coalition has enough veto power to afford the veto size.
+							</li>
+						</ul>
+					</div>
+					<div class="explainer-section">
 						<h5>Veto Power Intuition</h5>
 						<ul>
 							<li>
@@ -381,16 +391,10 @@
 								We want x% of voters to be able to veto x% of alternatives, so we get the veto power by normalizing the coalition size to the proportion of alternatives <strong>v(T)∝|T|m/n</strong>.
 							</li>
 							<li>
-								We want there to be at least one alternative left, so we cap the veto power at <strong>m-1</strong> alternatives when the coalition is , i.e. when <strong>|T|=n</strong>. An easy way to do this is to minus one: <strong>v(T)∝|T|m/n-1</strong>.
+								We want there to be at least one alternative left, so we cap the veto power at <strong>m-1</strong> alternatives when the coalition is everyone, i.e. when <strong>|T|=n</strong>. An easy way to do this is to minus one: <strong>v(T)∝|T|m/n-1</strong>.
 							</li>
 							<li>
 								We can stop here, but let's give each coalition slightly more veto power by rounding them up: <strong>v(T)=⌈|T|m/n⌉-1</strong>.
-							</li>
-							<li>
-								An alternative is vetoed if the veto power of a coalition is at least the veto size: <strong>v(T) ≥ m - |B|</strong>.
-							</li>
-							<li>
-								In other words, the coalition has enough veto power to afford the veto size.
 							</li>
 						</ul>
 					</div>
@@ -794,9 +798,8 @@
 	}
 
 	.veto-matrix-section {
-		margin-bottom: 3rem;
+		margin-bottom: 1.5rem;
 		padding: 1rem;
-		padding-bottom: 2rem;
 		background: #f8f9fa;
 		border-radius: 8px;
 		border: 1px solid #dee2e6;
@@ -811,7 +814,7 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 1rem;
-		margin-bottom: 1rem;
+		margin-bottom: 0.5rem;
 		padding: 0.75rem;
 		background: white;
 		border-radius: 4px;
