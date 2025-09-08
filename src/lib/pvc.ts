@@ -250,9 +250,9 @@ function checkVetoCoalition(
 	const T_size = coalition.length;
 	const B_size = preferredByAll.size;
 
-	const veto_power = T_size * (m-1) / n;
+	const veto_power = Math.ceil((T_size * m) / n) - 1;
 	const veto_size = m - B_size;
-	const canVeto = (veto_power > veto_size) || areNumbersApproximatelyEqual(veto_power, veto_size);
+	const canVeto = veto_power >= veto_size;
 	const preferredAlternatives = Array.from(preferredByAll).map(idx => alternatives[idx]);
 	console.log(`T_size / n: ${T_size / n}`);
 	console.log(`1-B_size / m: ${1 - B_size / m}`);
@@ -304,7 +304,7 @@ export function computeVetoCoalition(
 	const dashboardValues = {
 		T: bestCoalition.length,
 		T_size: bestCoalition.length,
-		v_T: (bestCoalition.length / n) * (m - 1),
+		v_T: Math.ceil(bestCoalition.length *m / n) - 1,
 		B: bestPreferred,
 		lambda_B_over_P: bestPreferred.length / m
 	};

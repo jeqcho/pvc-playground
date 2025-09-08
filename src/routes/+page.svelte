@@ -341,10 +341,10 @@
 					<div class="metrics-section">
 						<div class="metrics-grid">
 							<div class="metric-item">
-								<div class="metric-symbol">v(T)</div>
+								<div class="metric-symbol">v(T)=⌈|T|m/n⌉-1</div>
 								<div class="metric-details">
 									<div class="metric-label">Veto Power</div>
-									<div class="metric-value">{Math.round(v_T * 1000) / 1000}</div>
+									<div class="metric-value">{v_T }</div>
 								</div>
 							</div>
 
@@ -359,26 +359,32 @@
 					</div>
 					<div class="condition-result">
 						<div
-							class="condition-check {( (v_T >= m - B.length) || areNumbersApproximatelyEqual(v_T,m - B.length )) ? 'satisfied' : 'not-satisfied'}"
+							class="condition-check {( v_T >= m - B.length) ? 'satisfied' : 'not-satisfied'}"
 						>
 							<span class="condition-text">
 								{Math.round(v_T * 1000) / 1000}
-								{( (v_T >= m - B.length) || areNumbersApproximatelyEqual(v_T,m - B.length )) ? '≥' : '<'}
-								{Math.round((m - B.length) * 1000) / 1000}
+								{( v_T >= m - B.length) ? '≥' : '<'}
+								{m - B.length}
 							</span>
 							<span class="condition-status">
-								{( (v_T >= m - B.length) || areNumbersApproximatelyEqual(v_T,m - B.length )) ? '✓ Veto Power ≥ Veto Size' : '✗ Veto Power < Veto Size'}
+								{( v_T >= m - B.length) ? '✓ Veto Power ≥ Veto Size' : '✗ Veto Power < Veto Size'}
 							</span>
 						</div>
 					</div>
 					<div class="explainer-section">
-						<h5>Veto Power Explanation</h5>
+						<h5>Veto Power Intuition</h5>
 						<ul>
 							<li>
-								To form a winning coalition, we need to eliminate <strong>m-1</strong> candidates (leaving 1 winner), so each of the <strong>n</strong> voters can veto up to <strong>(m-1)/n</strong> alternatives. This is the veto power of a voter.
+								We want the veto power to be proportional to the coalition size, so <strong>v(T)∝|T|</strong>.
 							</li>
 							<li>
-								A coalition <strong>T</strong> of voters has total veto power: <strong>v(T)=|T|*(m-1)/n</strong>.
+								We want x% of voters to be able to veto x% of alternatives, so we get the veto power by normalizing the coalition size to the proportion of alternatives <strong>v(T)∝|T|m/n</strong>.
+							</li>
+							<li>
+								We want there to be at least one alternative left, so we cap the veto power at <strong>m-1</strong> alternatives when the coalition is , i.e. when <strong>|T|=n</strong>. An easy way to do this is to minus one: <strong>v(T)∝|T|m/n-1</strong>.
+							</li>
+							<li>
+								We can stop here, but let's give each coalition slightly more veto power by rounding them up: <strong>v(T)=⌈|T|m/n⌉-1</strong>.
 							</li>
 							<li>
 								An alternative is vetoed if the veto power of a coalition is at least the veto size: <strong>v(T) ≥ m - |B|</strong>.
