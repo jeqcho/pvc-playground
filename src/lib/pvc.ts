@@ -72,98 +72,76 @@ export function computePVC(preferences: string[][], alternatives: Alternative[])
 	}
 	console.log('Complete profile (numeric):', profile);
 
-	// Define p_i = (m-1)/n for each voter
-	// To avoid floating point issues, work with the fraction directly
-	console.log('Computing p_i values...');
-	const numerator = m - 1;
-	const gcd = (a: number, b: number): number => b === 0 ? a : gcd(b, a % b);
-	const commonDivisor = gcd(numerator, n);
-	console.log(`Original fraction: (m-1)/n = ${numerator}/${n}`);
-	console.log(`GCD of ${numerator} and ${n}: ${commonDivisor}`);
-
-	// Reduce fraction to lowest terms
-	const reducedNumerator = numerator / commonDivisor;
-	const reducedDenominator = n / commonDivisor;
-	console.log(`Reduced fraction: ${reducedNumerator}/${reducedDenominator}`);
-
-	const p_i = reducedNumerator; // After duplication, p_i becomes an integer
-	console.log(`p_i (elimination count per voter): ${p_i}`);
-
-	// Initialize remaining alternatives - after duplication, each alt appears multiple times
-	console.log('Initializing remaining alternatives with duplication...');
-	let remainingAlts: number[] = [];
-	// Each alternative appears reducedDenominator times
-	for (let alt = 0; alt < m; alt++) {
-		for (let i = 0; i < reducedDenominator; i++) {
-			remainingAlts.push(alt);
+	// veto by consumption
+	// init each alternative tank
+	const tanks = [];
+	for (let i = 0; i < m; ++i) {
+		tanks.push(1.0);
+	}
+	const remainingAlts = new Set(Array.from({ length: m }, (_, i) => i));
+	// run the clock
+	const eps = 1e-9;
+	while (remainingAlts.size > 1) {
+		console.log(`remainingAlts`,remainingAlts);
+		// init count voter in each alternative
+		const num_voter_eating: number[] = Array(m).fill(0.0);
+		for (let voter = 0; voter < n; ++voter) {
+			const voterProfile = profile[voter];
+			++num_voter_eating[voterProfile[voterProfile.length - 1]];
 		}
-	}
-	console.log(`Initial remainingAlts (each alt appears ${reducedDenominator} times):`, remainingAlts);
-
-	// Initialize remaining counts - each alternative appears reducedDenominator times
-	let remainingCounts = new Map<number, number>();
-	for (let alt = 0; alt < m; alt++) {
-		remainingCounts.set(alt, reducedDenominator);
-	}
-	console.log('Initial remainingCounts:', remainingCounts);
-
-	// Sequential elimination rounds
-	console.log('\n=== Starting sequential elimination rounds ===');
-	for (let voter = 0; voter < n; voter++) {
-		console.log(`\n--- Round ${voter + 1}: Voter ${voter} ---`);
-		console.log(`Remaining alts at start of round:`, remainingAlts);
-		console.log(`Remaining counts:`, remainingCounts);
-		const voterPrefs = profile[voter];
-		console.log(`Voter ${voter} preferences (indices):`, voterPrefs);
-
-		// Find this voter's preference order among remaining alternatives
-		const remainingPrefs: number[] = [];
-		for (const alt of voterPrefs) {
-			const count = remainingCounts.get(alt) || 0;
-			for (let i = 0; i < count; i++) {
-				remainingPrefs.push(alt);
+		console.log(`num_voter_eating`,num_voter_eating);
+		// find t_delta
+		let t_delta = 1.0;
+		for (let alt = 0; alt < m; ++alt) {
+			if (tanks[alt] == 0 || num_voter_eating[alt] == 0) continue;
+			t_delta = Math.min(t_delta, tanks[alt] / num_voter_eating[alt]);
+		}
+		console.log("t_delta",t_delta);
+		// let t_delta pass
+		const eliminatedNow = [];
+		for (let alt = 0; alt < m; ++alt) {
+			if (tanks[alt] == 0) continue;
+			tanks[alt] -= t_delta * num_voter_eating[alt];
+			if (tanks[alt] < eps) {
+				console.log("killed", alt);
+				tanks[alt] = 0;
+				remainingAlts.delete(alt);
+				eliminatedNow.push(alt);
 			}
 		}
-		console.log(`Voter ${voter} remaining preferences (with duplicates):`, remainingPrefs);
-
-		// Take the p_i least preferred (from the end of their preference order)
-		const toEliminate = remainingPrefs.slice(-p_i);
-		console.log(`Alternatives to eliminate (${p_i} least preferred):`, toEliminate);
-
-		// Remove these alternatives from remainingAlts and update counts
-		toEliminate.forEach(altToRemove => {
-			assert(remainingAlts.length > 0, 'Should have multiple alternatives remaining at start of round');
-			const index = remainingAlts.indexOf(altToRemove);
-			console.log(`Removing alt ${altToRemove} at index ${index} from remainingAlts`);
-			assert(index > -1);
-			remainingAlts.splice(index, 1);
-			// Update count
-			const currentCount = remainingCounts.get(altToRemove) || 0;
-			if (currentCount > 1) {
-				remainingCounts.set(altToRemove, currentCount - 1);
-				console.log(`Updated count for alt ${altToRemove}: ${currentCount - 1}`);
-			} else {
-				remainingCounts.delete(altToRemove);
-				console.log(`Completely removed alt ${altToRemove} from counts`);
+		console.log('tanks',tanks)
+		console.log('eliminatedNow',eliminatedNow);
+		// remove alts from voters rankings
+		for (let voter = 0; voter < n; ++voter) {
+			while (profile[voter].length > 0 && tanks[profile[voter][profile[voter].length - 1]] == 0) {
+				profile[voter].pop();
 			}
-		});
-		console.log(`Remaining alts after elimination:`, remainingAlts);
-		console.log(`Remaining counts after elimination:`, remainingCounts);
+		}
+		if (remainingAlts.size == 0) {
+			// ties
+			return numbersToAlphabets(eliminatedNow);
+		}
 	}
 
-	// Collapse clones
-	console.log('\n=== Final processing ===');
-	console.log('Final remainingAlts:', remainingAlts);
-	// assert(remainingAlts.length > 0, `PVC should be empty. remainingAlts is ${remainingAlts}`);
-	// Convert back to alternative names
-	const remainingAltsSet = new Set(remainingAlts);
-	console.log('Unique remaining alternatives (indices):', Array.from(remainingAltsSet));
-	const result = Array.from(remainingAltsSet).map(idx => alternatives[idx]);
-	console.log('PVC result (alternative names):', result);
-	console.log('=== computePVC completed ===\n');
+	return numbersToAlphabets([...remainingAlts]);
+}
 
+function numbersToAlphabets(numbers: number[]): string[] {
+	return numbers.map(numberToAlphabet);
+}
+
+
+function numberToAlphabet(num: number): string {
+	// Supports 0 -> 'a', 1 -> 'b', ..., 25 -> 'z', 26 -> 'aa', etc.
+	let result = '';
+	num = Math.floor(num);
+	do {
+		result = String.fromCharCode(97 + (num % 26)) + result;
+		num = Math.floor(num / 26) - 1;
+	} while (num >= 0);
 	return result;
 }
+
 
 /**
  * Check if a coalition of voters can veto an alternative
@@ -304,7 +282,7 @@ export function computeVetoCoalition(
 	const dashboardValues = {
 		T: bestCoalition.length,
 		T_size: bestCoalition.length,
-		v_T: Math.ceil(bestCoalition.length *m / n) - 1,
+		v_T: Math.ceil(bestCoalition.length * m / n) - 1,
 		B: bestPreferred,
 		lambda_B_over_P: bestPreferred.length / m
 	};

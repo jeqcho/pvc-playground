@@ -260,7 +260,7 @@
 
 			<div class="legend">
 				<span class="legend-item">
-					<span class="border-box successive-border"></span> Successive Elimination Result
+					<span class="border-box successive-border"></span> Veto by Consumption Result
 				</span>
 				<span class="legend-item">
 					<span class="color-box green"></span> In PVC
