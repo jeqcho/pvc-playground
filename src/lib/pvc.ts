@@ -260,6 +260,7 @@ export function computeVetoCoalition(
 	// Iterate over all 2^n possible coalitions (excluding empty set)
 	let bestCoalition: number[] = [];
 	let bestPreferred: Alternative[] = [];
+	let bestScore = -1; // Track the maximum mk + nb score
 
 	for (let coalitionMask = 1; coalitionMask < (1 << n); coalitionMask++) {
 		// Convert bit mask to coalition indices
@@ -273,8 +274,15 @@ export function computeVetoCoalition(
 		const result = checkVetoCoalition(alternative, coalition, preferences, alternatives);
 
 		if (result.canVeto && result.preferredAlternatives.length > 0) {
-			bestCoalition = coalition;
-			bestPreferred = result.preferredAlternatives;
+			const k = coalition.length; // coalition size
+			const b = result.preferredAlternatives.length; // preferred alternatives size
+			const score = m * k + n * b; // mk + nb
+			
+			if (score > bestScore) {
+				bestScore = score;
+				bestCoalition = coalition;
+				bestPreferred = result.preferredAlternatives;
+			}
 		}
 	}
 
